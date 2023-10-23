@@ -3,12 +3,11 @@
 
 /**** low-level imports *****/
 use panic_halt as _;
-use cortex_m::prelude::*;
+// use cortex_m::prelude::*;
 use cortex_m_rt::entry;
 use embedded_hal::{
-        digital::v2::{OutputPin},
-    };
-use embedded_time::rate::*;
+    digital::v2::{OutputPin},
+};
 
 /***** board-specific imports *****/
 use adafruit_feather_rp2040::{
@@ -48,17 +47,17 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    let mut timer = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().integer());
+    let mut timer = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
     let mut led_pin = pins.d13.into_push_pull_output();
 
     /*
     Loop Section
     */
-    let mut delay: u32 = 500;   // loop delay in ms
+    let delay: u32 = 500;   // loop delay in ms
     loop {
-        led_pin.set_low();
+        let _ = led_pin.set_low();
         timer.delay_ms(delay as u32);
-        led_pin.set_high();
+        let _ =led_pin.set_high();
         timer.delay_ms(delay as u32);
     }
 
