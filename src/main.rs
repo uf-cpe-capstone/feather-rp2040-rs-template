@@ -55,9 +55,9 @@ fn main() -> ! {
     */
     let delay: u32 = 500;   // loop delay in ms
     loop {
-        let _ = led_pin.set_low();
+        led_pin.set_low().unwrap();
         timer.delay_ms(delay as u32);
-        let _ =led_pin.set_high();
+        led_pin.set_high().unwrap();
         timer.delay_ms(delay as u32);
     }
 
