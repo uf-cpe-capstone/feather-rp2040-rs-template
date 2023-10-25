@@ -2,7 +2,9 @@
 #![no_main]
 
 /**** low-level imports *****/
-use panic_halt as _;
+use core::fmt::Write;
+use core::panic::PanicInfo;
+// use panic_halt as _;
 // use cortex_m::prelude::*;
 use cortex_m_rt::entry;
 use embedded_hal::{
@@ -10,15 +12,41 @@ use embedded_hal::{
 };
 
 /***** board-specific imports *****/
+use adafruit_feather_rp2040::hal as hal;
+use hal::{
+    pac::interrupt,
+    clocks::{init_clocks_and_plls, Clock},
+    pac,
+    watchdog::Watchdog,
+    Sio,
+};
 use adafruit_feather_rp2040::{
-    hal::{
-        clocks::{init_clocks_and_plls, Clock},
-        pac,
-        watchdog::Watchdog,
-        Sio,
-    },
     Pins, XOSC_CRYSTAL_FREQ,
 };
+
+// USB Device support
+use usb_device::class_prelude::*;
+// USB Communications Class Device support
+mod usb_manager;
+use usb_manager::UsbManager;
+// Global USB objects & interrupt
+static mut USB_BUS: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
+static mut USB_MANAGER: Option<UsbManager> = None;
+#[allow(non_snake_case)]
+#[interrupt]
+unsafe fn USBCTRL_IRQ() {
+    match USB_MANAGER.as_mut() {
+        Some(manager) => manager.interrupt(),
+        None => (),
+    };
+}
+#[panic_handler]
+fn panic(panic_info: &PanicInfo) -> ! {
+    if let Some(usb) = unsafe { USB_MANAGER.as_mut() } {
+        writeln!(usb, "{}", panic_info).ok();
+    }
+    loop {}
+}
 
 #[entry]
 fn main() -> ! {
@@ -37,6 +65,21 @@ fn main() -> ! {
         &mut watchdog,
     ).ok().unwrap();
     
+    // Setup USB
+    let usb = unsafe {
+        USB_BUS = Some(UsbBusAllocator::new(hal::usb::UsbBus::new(
+            pac.USBCTRL_REGS,
+            pac.USBCTRL_DPRAM,
+            clocks.usb_clock,
+            true,
+            &mut pac.RESETS,
+        )));
+        USB_MANAGER = Some(UsbManager::new(USB_BUS.as_ref().unwrap()));
+        // Enable the USB interrupt
+        pac::NVIC::unmask(hal::pac::Interrupt::USBCTRL_IRQ);
+        USB_MANAGER.as_mut().unwrap()
+    };
+
     // initialize the Single Cycle IO
     let sio = Sio::new(pac.SIO);
     // initialize the pins to default state
@@ -55,6 +98,7 @@ fn main() -> ! {
     */
     let delay: u32 = 500;   // loop delay in ms
     loop {
+        write!(usb, "starting loop! :)\r\n").unwrap();
         led_pin.set_low().unwrap();
         timer.delay_ms(delay as u32);
         led_pin.set_high().unwrap();
