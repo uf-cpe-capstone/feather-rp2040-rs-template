@@ -97,12 +97,14 @@ fn main() -> ! {
     Loop Section
     */
     let delay: u32 = 500;   // loop delay in ms
+    let mut n: u32 = 0;
     loop {
-        write!(usb, "starting loop! :)\r\n").unwrap();
+        write!(usb, "starting loop number {:?}\r\n", n).unwrap();
         led_pin.set_low().unwrap();
         timer.delay_ms(delay as u32);
         led_pin.set_high().unwrap();
         timer.delay_ms(delay as u32);
+        n = n + 1;
     }
 
 }
