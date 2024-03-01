@@ -1,27 +1,30 @@
 #![no_std]
 #![no_main]
 
+/******************************************************************************
+    Insert the proper 2nd stage bootloader
+******************************************************************************/
+#[link_section = ".boot2"]
+#[no_mangle]
+#[used]
+pub static BOOT2_FIRMWARE: [u8; 256] = rp2040_boot2::BOOT_LOADER_GD25Q64CS;
+
 /**** low-level imports *****/
 use core::fmt::Write;
 use core::panic::PanicInfo;
-// use panic_halt as _;
-// use cortex_m::prelude::*;
 use cortex_m_rt::entry;
 use embedded_hal::{
-    digital::v2::{OutputPin},
+    digital::OutputPin,
 };
 
 /***** board-specific imports *****/
-use adafruit_feather_rp2040::hal as hal;
+use rp2040_hal as hal;
 use hal::{
     pac::interrupt,
     clocks::{init_clocks_and_plls, Clock},
     pac,
     watchdog::Watchdog,
     Sio,
-};
-use adafruit_feather_rp2040::{
-    Pins, XOSC_CRYSTAL_FREQ,
 };
 
 // USB Device support
@@ -56,7 +59,7 @@ fn main() -> ! {
     // Init the watchdog timer, to pass into the clock init
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
     let clocks = init_clocks_and_plls(
-        XOSC_CRYSTAL_FREQ,
+        12_000_000u32,
         pac.XOSC,
         pac.CLOCKS,
         pac.PLL_SYS,
@@ -83,7 +86,7 @@ fn main() -> ! {
     // initialize the Single Cycle IO
     let sio = Sio::new(pac.SIO);
     // initialize the pins to default state
-    let pins = Pins::new(
+    let pins = hal::gpio::Pins::new(
         pac.IO_BANK0,
         pac.PADS_BANK0,
         sio.gpio_bank0,
@@ -91,7 +94,7 @@ fn main() -> ! {
     );
 
     let mut timer = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
-    let mut led_pin = pins.d13.into_push_pull_output();
+    let mut led_pin = pins.gpio13.into_push_pull_output();
 
     /*
     Loop Section
@@ -100,6 +103,7 @@ fn main() -> ! {
     let mut n: u32 = 0;
     loop {
         write!(usb, "starting loop number {:?}\r\n", n).unwrap();
+        write!(usb, "  current delay is {:?}\r\n", delay).unwrap();
         led_pin.set_low().unwrap();
         timer.delay_ms(delay as u32);
         led_pin.set_high().unwrap();

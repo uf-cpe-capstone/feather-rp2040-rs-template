@@ -1,8 +1,8 @@
-use adafruit_feather_rp2040::hal as hal;
+use rp2040_hal as hal;
 use usb_device;
 use usb_device::{
     bus::UsbBusAllocator,
-    device::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
+    device::{UsbDevice, UsbDeviceBuilder, UsbVidPid, StringDescriptors},
 };
 use usbd_serial::SerialPort;
 
@@ -16,10 +16,12 @@ impl UsbManager {
     
         let serial = usbd_serial::SerialPort::new(usb_bus);
 
+        // let mutstrings = StringDescriptors::new()
+
         let device = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x2E8A, 0x000a))
-            .manufacturer("Raspberry Pi")
-            .product("Pico")
-            .serial_number("TEST")
+            // .manufacturer("Raspberry Pi")
+            // .product("Pico")
+            // .serial_number("TEST")
             .device_class(usbd_serial::USB_CLASS_CDC)
             .build();
 
