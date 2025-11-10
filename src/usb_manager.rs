@@ -1,4 +1,4 @@
-use adafruit_feather_rp2040::hal as hal;
+use adafruit_feather_rp2040::hal;
 use usb_device;
 use usb_device::{
     bus::UsbBusAllocator,
@@ -13,7 +13,6 @@ pub struct UsbManager {
 
 impl UsbManager {
     pub fn new(usb_bus: &'static UsbBusAllocator<hal::usb::UsbBus>) -> Self {
-    
         let serial = usbd_serial::SerialPort::new(usb_bus);
 
         let device = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x2E8A, 0x000a))
